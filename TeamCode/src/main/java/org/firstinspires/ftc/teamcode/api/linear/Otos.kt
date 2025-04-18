@@ -42,6 +42,9 @@ object Otos : API() {
         otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
     }
 
+    /**
+     * Run during init for proper initialization of the otos sensor
+     */
     fun configureOtos() {
         linearOpMode.telemetry.addLine("OTOS Config")
         linearOpMode.telemetry.update()
@@ -72,7 +75,7 @@ object Otos : API() {
 
         runtime.reset()
 
-        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((Math.abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (Math.abs(yError) > RobotConfig.OTOS.Y_THRESHOLD) || (Math.abs(hError) > 4)))  {
+        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((Math.abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (Math.abs(yError) > RobotConfig.OTOS.Y_THRESHOLD) || (Math.abs(hError) > RobotConfig.OTOS.H_THRESHOLD)))  {
             with(RobotConfig.OTOS) {
                 drive = Range.clip(yError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED)
                 strafe = -1 * (Range.clip(xError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE))

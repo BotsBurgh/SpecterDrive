@@ -86,72 +86,93 @@ object RobotConfig {
 
     @Config
     object OTOS {
+
+        /**
+         * If sensor is not mounted in the center and or facing the front of the robot,
+         * adjust the offset. If possible mount in the center and avoid needing to change this.
+         */
         @JvmField
         var OFFSET = SparkFunOTOS.Pose2D(0.0, 0.0 ,0.0)
 
+        /**
+         * Should be set to one by default. If the sensor is reading distances incorrectly
+         * the values can be changed to act as a correction (will only work if readings are
+         * consistently off).
+         */
         @JvmField
         var LINEAR_SCALAR: Double = 1.0
 
+        /**
+         * Should be set to one by default. If the sensor is reading heading incorrectly
+         * the values can be changed to act as a correction (will only work if readings are
+         * consistently off).
+         */
         @JvmField
         var ANGULAR_SCALAR: Double = 1.0
 
+        /**
+         * Controls the acceleration of y-axis movement.
+         */
         @JvmField
         var SPEED_GAIN: Double = 0.04
 
+        /**
+         * Max speed that can be achieved on the y-axis.
+         */
         @JvmField
         var MAX_AUTO_SPEED: Double = 0.4
 
+        /**
+         * Controls the acceleration of x-axis movement.
+         */
         @JvmField
         var STRAFE_GAIN: Double = 0.04
 
+        /**
+         * Max speed that can be achieved on the x-axis.
+         */
         @JvmField
         var MAX_AUTO_STRAFE: Double = 0.4
 
+        /**
+         * Controls the turing acceleration.
+         */
         @JvmField
         var TURN_GAIN: Double = 0.04
 
+        /**
+         * Max speed that can be achieved by rotation.
+         */
         @JvmField
         var MAX_AUTO_TURN: Double = 0.4
 
+        /**
+         * Overall Drive speed of the robot. If robot moves in the wrong
+         * direction, negate the current magnitude.
+         */
         @JvmField
         var MAGNITUDE: Double = -0.5
 
-        @JvmField
-        var POS: DoubleArray = doubleArrayOf(-3.0, 26.0, 0.0, 1.25)
-
-        @JvmField
-        var POS2: DoubleArray = doubleArrayOf(-30.0, 15.0, 0.0, 10.0)
-
-        @JvmField
-        var POS3: DoubleArray = doubleArrayOf(-30.0, 45.0, 0.0, 10.0)
-
-        @JvmField
-        var POS4: DoubleArray = doubleArrayOf(-40.0, 45.0, 20.0, 10.0)
-
-        @JvmField
-        var POS5: DoubleArray = doubleArrayOf(-40.0, -5.0, 20.0, 10.0)
-
-        @JvmField
-        var POS6: DoubleArray = doubleArrayOf(-40.0, 45.0, 0.0, 10.0)
-
-        @JvmField
-        var POS7: DoubleArray = doubleArrayOf(-55.0, 45.0, 0.0, 10.0)
-
-        @JvmField
-        var POS8: DoubleArray = doubleArrayOf(-55.0, 0.0, 0.0, 10.0)
-
-        @JvmField
-        var POS9: DoubleArray = doubleArrayOf(-50.0, 20.0, 0.0, 10.0)
-
-        @JvmField
-        var POS10: DoubleArray = doubleArrayOf(-50.0, 20.0, 0.0, 10.0)
-
+        /**
+         * The accepted value for the x-axis error.
+         */
         @JvmField
         var X_THRESHOLD: Double = 5.0
 
+        /**
+         * The accepted value for the y-axis error.
+         */
         @JvmField
         var Y_THRESHOLD: Double = 5.0
 
+        /**
+         * The accepted value for the heading error.
+         */
+        @JvmField
+        var H_THRESHOLD: Double = 4.0
+
+
+        //@TODO Remove turn and dir
         @JvmField
         var turn: Double = 90.0
 
