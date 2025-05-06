@@ -7,6 +7,8 @@ import com.qualcomm.robotcore.util.Range
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.RobotConfig
+import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.MAX_AUTO_TURN
+import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.TURN_GAIN
 import org.firstinspires.ftc.teamcode.api.TriWheels
 import org.firstinspires.ftc.teamcode.core.API
 import kotlin.math.abs
@@ -77,11 +79,13 @@ object SpecterDrive : API() {
 
         while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (abs(yError) > RobotConfig.OTOS.Y_THRESHOLD) || (abs(hError) > RobotConfig.OTOS.H_THRESHOLD)))
         {
-            with(RobotConfig.OTOS) {
-                drive = Range.clip(yError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED)
-                strafe = -1 * (Range.clip(xError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE))
-                turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
-            }
+            computePower()
+
+            currentPos = myPos()
+            xError = x + currentPos.x
+            yError = y - currentPos.y
+            hError = h - currentPos.h
+
             with(linearOpMode.telemetry) {
                 addData("current X coordinate", currentPos.x)
                 addData("current Y coordinate", currentPos.y)
@@ -94,13 +98,6 @@ object SpecterDrive : API() {
                 addData("yawError", hError)
                 update()
             }
-
-            computePower()
-
-            currentPos = myPos()
-            xError = x + currentPos.x
-            yError = y - currentPos.y
-            hError = h - currentPos.h
         }
 
 //        moveRobot(0.0, 0.0, 0.0)
@@ -122,6 +119,8 @@ object SpecterDrive : API() {
 
         var (redWheelPower, greenWheelPower, blueWheelPower) =
             TriWheels.compute(rad, RobotConfig.OTOS.MAGNITUDE)
+
+        turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
         redWheelPower += turn
         greenWheelPower += turn
