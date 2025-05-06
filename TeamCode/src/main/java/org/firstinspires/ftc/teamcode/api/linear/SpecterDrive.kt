@@ -113,7 +113,10 @@ object SpecterDrive : API() {
 //        }
     }
 
-    fun computePower() {
+    /**
+     * Calculates the powers to follow any given path. All powers are normalized
+     */
+    private fun computePower() {
 
         var rad: Double = atan2(yError, xError)
 
@@ -139,8 +142,9 @@ object SpecterDrive : API() {
     }
 
 
-
-
+    /**
+     * Shorthand to get position
+     */
     fun myPos(): SparkFunOTOS.Pose2D {
         pos = otos.position
         return (pos)
@@ -168,6 +172,4 @@ object SpecterDrive : API() {
             linearOpMode.telemetry.update()
         }
     }
-
-
 }

@@ -135,7 +135,7 @@ object RobotConfig {
         var MAX_AUTO_STRAFE: Double = 0.4
 
         /**
-         * Controls the turing acceleration.
+         * Controls the turning acceleration.
          */
         @JvmField
         var TURN_GAIN: Double = 0.04
