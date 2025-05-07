@@ -8,17 +8,22 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
 import org.firstinspires.ftc.teamcode.RobotConfig
 import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.MAX_AUTO_TURN
+import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.SPEED_GAIN
+import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.STRAFE_GAIN
 import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.TURN_GAIN
+import org.firstinspires.ftc.teamcode.api.CsvLogging
 import org.firstinspires.ftc.teamcode.api.TriWheels
 import org.firstinspires.ftc.teamcode.core.API
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.sqrt
 
 object SpecterDrive : API() {
 
     override val isLinear = true
 
     lateinit var otos: SparkFunOTOS
+        private set
 
     private var pos = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
 
@@ -28,12 +33,9 @@ object SpecterDrive : API() {
     private var yError: Double = 0.0
     private var hError: Double = 0.0
 
-    private var max: Double = 0.0
-
-    private var drive: Double = 0.0
-    private var strafe: Double = 0.0
     private var turn: Double = 0.0
 
+    var isLog: Boolean = false
 
     override fun init(opMode: OpMode) {
         super.init(opMode)
@@ -41,13 +43,14 @@ object SpecterDrive : API() {
         otos = this.opMode.hardwareMap.get(SparkFunOTOS::class.java, "OTOS")
 
         otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
-    }
 
+        configureOtos()
+    }
 
     /**
      * Run during init for proper initialization of the otos sensor
      */
-    fun configureOtos() {
+    private fun configureOtos() {
         linearOpMode.telemetry.addLine("OTOS Config")
         linearOpMode.telemetry.update()
 
@@ -66,10 +69,22 @@ object SpecterDrive : API() {
         otos.resetTracking()
 
         otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
+
+        if (isLog) {
+            CsvLogging.init(opMode)
+            CsvLogging.createFile("OTOS")
+        }
     }
 
+    /**
+     * Computes a direct path towards the targeted position
+     *
+     * @param x The target global x coordinate on the field
+     * @param y The target global y coordinate on the field
+     * @param h The target global heading
+     * @param t Max runtime in seconds before timing out
+     */
     fun path(x: Double, y: Double, h: Double, t: Double) {
-
         var currentPos: SparkFunOTOS.Pose2D = myPos()
         xError = x + currentPos.x
         yError = y - currentPos.y
@@ -77,8 +92,10 @@ object SpecterDrive : API() {
 
         runtime.reset()
 
-        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (abs(yError) > RobotConfig.OTOS.Y_THRESHOLD) || (abs(hError) > RobotConfig.OTOS.H_THRESHOLD)))
-        {
+        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (abs(
+                yError
+            ) > RobotConfig.OTOS.Y_THRESHOLD) || (abs(hError) > RobotConfig.OTOS.H_THRESHOLD))
+        ) {
             computePower()
 
             currentPos = myPos()
@@ -98,48 +115,43 @@ object SpecterDrive : API() {
                 addData("yawError", hError)
                 update()
             }
+            if (isLog)
+                CsvLogging.writeFile("OTOS", arrayOf(currentPos.x, xError, currentPos.y, yError, currentPos.h, hError))
         }
-
-//        moveRobot(0.0, 0.0, 0.0)
-//        currentPos = myPos()
-//        with(linearOpMode.telemetry) {
-//            addData("current X coordinate", currentPos.x)
-//            addData("current Y coordinate", currentPos.y)
-//            addData("current Heading angle", currentPos.h)
-//            update()
-//        }
     }
 
     /**
      * Calculates the powers to follow any given path. All powers are normalized
      */
     private fun computePower() {
-
         var rad: Double = atan2(yError, xError)
 
-        var (redWheelPower, greenWheelPower, blueWheelPower) =
-            TriWheels.compute(rad, RobotConfig.OTOS.MAGNITUDE)
+        var magnitude: Double =
+            -sqrt((xError * STRAFE_GAIN) * (xError * STRAFE_GAIN) + (yError * SPEED_GAIN) * (yError * SPEED_GAIN))
+
+        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, magnitude)
 
         turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
-        redWheelPower += turn
-        greenWheelPower += turn
-        blueWheelPower += turn
-
-        //normalize wheel power
-        max = Math.max(abs(redWheelPower), Math.abs(greenWheelPower))
-        max = Math.max(max, abs(blueWheelPower))
-
-        if (max > 0.75) {
-            redWheelPower /= max
-            greenWheelPower /= max
-            blueWheelPower /= max
-        }
+        redWheelPower = clipWheelPower(redWheelPower + turn)
+        greenWheelPower = clipWheelPower(greenWheelPower + turn)
+        blueWheelPower = clipWheelPower(blueWheelPower + turn)
 
         TriWheels.power(redWheelPower, greenWheelPower, blueWheelPower)
         linearOpMode.sleep(10)
     }
 
+    /**
+     * Normalizes wheel power between `[-0.75, -0.2]` U `[0.2, 0.75]`
+     */
+    private fun clipWheelPower(power: Double): Double {
+        return when {
+            power in -0.2..0.2 -> if (power < 0) -0.2 else 0.2
+            power < -0.75 -> -0.75
+            power > 0.75 -> 0.75
+            else -> power
+        }
+    }
 
     /**
      * Shorthand to get position
@@ -147,28 +159,5 @@ object SpecterDrive : API() {
     fun myPos(): SparkFunOTOS.Pose2D {
         pos = otos.position
         return (pos)
-    }
-
-
-
-
-
-
-
-
-
-
-    fun turn(h: Double, d: Double) {
-        var currentPos = myPos()
-
-        hError = h - currentPos.h
-
-        while (linearOpMode.opModeIsActive() && Math.abs(hError) > 5) {
-            currentPos = myPos()
-            hError = h - currentPos.h
-            TriWheels.power(0.25 * d, 0.25 * d, 0.25 * d)
-            linearOpMode.telemetry.addData("hError", hError)
-            linearOpMode.telemetry.update()
-        }
     }
 }
