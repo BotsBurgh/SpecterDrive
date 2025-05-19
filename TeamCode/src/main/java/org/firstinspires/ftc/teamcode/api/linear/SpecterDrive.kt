@@ -86,7 +86,8 @@ object SpecterDrive : API() {
      */
     fun path(x: Double, y: Double, h: Double, t: Double) {
         var currentPos: SparkFunOTOS.Pose2D = myPos()
-        xError = x + currentPos.x
+        //need to fix robot driving backwards. Multiplying by -1 is a temp fix
+        xError = (x - currentPos.x) * -1
         yError = y - currentPos.y
         hError = h - currentPos.h
 
@@ -99,7 +100,7 @@ object SpecterDrive : API() {
             computePower()
 
             currentPos = myPos()
-            xError = x + currentPos.x
+            xError = (x - currentPos.x) * -1
             yError = y - currentPos.y
             hError = h - currentPos.h
 
@@ -129,7 +130,7 @@ object SpecterDrive : API() {
         var magnitude: Double =
             -sqrt((xError * STRAFE_GAIN) * (xError * STRAFE_GAIN) + (yError * SPEED_GAIN) * (yError * SPEED_GAIN))
 
-        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, magnitude)
+        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, -magnitude)
 
         turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
@@ -147,8 +148,8 @@ object SpecterDrive : API() {
     private fun clipWheelPower(power: Double): Double {
         return when {
             power in -0.2..0.2 -> if (power < 0) -0.2 else 0.2
-            power < -0.75 -> -0.75
-            power > 0.75 -> 0.75
+            power < -0.3 -> -0.3
+            power > 0.3 -> 0.3
             else -> power
         }
     }
