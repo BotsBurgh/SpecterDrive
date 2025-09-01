@@ -15,14 +15,18 @@ class SpecterDriveTest: LinearOpMode() {
 
         waitForStart()
 
-        SpecterDrive.path(0.0, 24.0, 0.0, 5.0)
-        sleep(100)
-        SpecterDrive.path(0.0, -24.0, 0.0, 5.0)
-        sleep(100)
-        SpecterDrive.path(0.0, 0.0, 0.0, 5.0)
-        sleep(100)
-        SpecterDrive.path(24.0, 0.0, 0.0, 5.0)
-        sleep(100)
+        //SpecterDrive.path(0.0, 24.0, 0.0, 5.0)
+        //sleep(100)
+
+        //SpecterDrive.path(0.0, -24.0, 0.0, 5.0)
+        //sleep(100)
+
+        //SpecterDrive.path(0.0, 0.0, 0.0, 5.0)
+        //sleep(100)
+
+        //SpecterDrive.path(24.0, 0.0, 0.0, 5.0)
+        //sleep(100)
+
         SpecterDrive.path(-24.0,0.0,0.0,5.0)
     }
 }

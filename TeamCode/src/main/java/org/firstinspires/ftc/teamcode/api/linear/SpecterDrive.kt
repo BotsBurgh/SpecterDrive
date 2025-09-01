@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.TURN_GAIN
 import org.firstinspires.ftc.teamcode.api.CsvLogging
 import org.firstinspires.ftc.teamcode.api.TriWheels
 import org.firstinspires.ftc.teamcode.core.API
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -32,17 +33,14 @@ object SpecterDrive : API() {
     private var xError: Double = 0.0
     private var yError: Double = 0.0
     private var hError: Double = 0.0
-
     private var turn: Double = 0.0
 
-    var isLog: Boolean = false
+    var  isLog: Boolean = true
 
     override fun init(opMode: OpMode) {
         super.init(opMode)
 
         otos = this.opMode.hardwareMap.get(SparkFunOTOS::class.java, "OTOS")
-
-        otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
 
         configureOtos()
     }
@@ -84,81 +82,83 @@ object SpecterDrive : API() {
      * @param h The target global heading
      * @param t Max runtime in seconds before timing out
      */
+
+
     fun path(x: Double, y: Double, h: Double, t: Double) {
-        var currentPos: SparkFunOTOS.Pose2D = myPos()
-        //need to fix robot driving backwards. Multiplying by -1 is a temp fix
-        xError = (x - currentPos.x) * -1
-        yError = y - currentPos.y
-        hError = h - currentPos.h
+        otos.resetTracking()
+
+        xError = x - otos.position.x
+        yError = y - otos.position.y
+        hError = AngleUnit.normalizeDegrees(h - otos.position.h)
 
         runtime.reset()
 
-        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((abs(xError) > RobotConfig.OTOS.X_THRESHOLD) || (abs(
-                yError
-            ) > RobotConfig.OTOS.Y_THRESHOLD) || (abs(hError) > RobotConfig.OTOS.H_THRESHOLD))
+        while (linearOpMode.opModeIsActive() && (runtime.milliseconds() < t * 1000) && ((abs(xError) > RobotConfig.OTOS.X_THRESHOLD) ||
+                    (abs(yError) > RobotConfig.OTOS.Y_THRESHOLD) || (abs(hError) > RobotConfig.OTOS.H_THRESHOLD))
         ) {
             computePower()
 
-            currentPos = myPos()
-            xError = (x - currentPos.x) * -1
-            yError = y - currentPos.y
-            hError = h - currentPos.h
+            xError = x - otos.position.x
+            yError = y - otos.position.y
+            hError = AngleUnit.normalizeDegrees(h - otos.position.h)
 
             with(linearOpMode.telemetry) {
-                addData("current X coordinate", currentPos.x)
-                addData("current Y coordinate", currentPos.y)
-                addData("current Heading angle", currentPos.h)
+                addData("current X coordinate", otos.position.x)
+                addData("current Y coordinate", otos.position.y)
+                addData("current Heading angle", otos.position.h)
                 addData("target X coordinate", x)
                 addData("target Y coordinate", y)
                 addData("target Heading angle", h)
                 addData("xError", xError)
                 addData("yError", yError)
                 addData("yawError", hError)
+                addData("Turn", turn)
                 update()
             }
             if (isLog)
-                CsvLogging.writeFile("OTOS", arrayOf(currentPos.x, xError, currentPos.y, yError, currentPos.h, hError))
-        }
+                CsvLogging.writeFile("OTOS", arrayOf(otos.position.x, xError, otos.position.y, yError, otos.position.h, hError, turn)) }
+
+        TriWheels.power(0.0, 0.0, 0.0)
+
+        otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
     }
 
     /**
      * Calculates the powers to follow any given path. All powers are normalized
      */
     private fun computePower() {
-        var rad: Double = atan2(yError, xError)
+
+        var rad: Double = atan2(yError, xError) - PI
 
         var magnitude: Double =
-            -sqrt((xError * STRAFE_GAIN) * (xError * STRAFE_GAIN) + (yError * SPEED_GAIN) * (yError * SPEED_GAIN))
+            sqrt((xError * STRAFE_GAIN) * (xError * STRAFE_GAIN) + (yError * SPEED_GAIN) * (yError * SPEED_GAIN))
 
-        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, -magnitude)
+        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, magnitude)
 
-        turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
+        turn = Range.clip(0 * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
         redWheelPower = clipWheelPower(redWheelPower + turn)
         greenWheelPower = clipWheelPower(greenWheelPower + turn)
         blueWheelPower = clipWheelPower(blueWheelPower + turn)
 
         TriWheels.power(redWheelPower, greenWheelPower, blueWheelPower)
-        linearOpMode.sleep(10)
+
+
     }
 
+
+
     /**
-     * Normalizes wheel power between `[-0.75, -0.2]` U `[0.2, 0.75]`
+     * Normalizes wheel power between `[-0.3, -0.2]` U `[0.2, 0.3]`
      */
     private fun clipWheelPower(power: Double): Double {
         return when {
-            power in -0.2..0.2 -> if (power < 0) -0.2 else 0.2
+            power in -0.2..0.2 -> if (power < 0) -0.2 else 0.0
             power < -0.3 -> -0.3
             power > 0.3 -> 0.3
             else -> power
         }
     }
 
-    /**
-     * Shorthand to get position
-     */
-    fun myPos(): SparkFunOTOS.Pose2D {
-        pos = otos.position
-        return (pos)
-    }
+
 }

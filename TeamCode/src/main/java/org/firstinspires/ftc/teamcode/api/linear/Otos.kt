@@ -11,6 +11,7 @@ import org.firstinspires.ftc.teamcode.api.TriWheels
 import org.firstinspires.ftc.teamcode.core.API
 import kotlin.math.atan2
 
+@Deprecated("Use the SpecterDrive Object instead")
 object Otos : API() {
     override val isLinear = true
 
