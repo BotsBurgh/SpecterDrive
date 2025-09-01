@@ -135,7 +135,7 @@ object SpecterDrive : API() {
 
         var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, magnitude)
 
-        turn = Range.clip(0 * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
+        turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
         redWheelPower = clipWheelPower(redWheelPower + turn)
         greenWheelPower = clipWheelPower(greenWheelPower + turn)
