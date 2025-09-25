@@ -181,4 +181,14 @@ object RobotConfig {
 
 
     }
+
+    @Config
+    object SpecterDriveTest {
+
+        @JvmField
+        var xEr = 0.0
+
+        @JvmField
+        var yEr = 0.0
+    }
 }

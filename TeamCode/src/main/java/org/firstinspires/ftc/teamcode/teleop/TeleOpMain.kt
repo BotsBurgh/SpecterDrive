@@ -33,6 +33,9 @@ class TeleOpMain : OpMode() {
 
         var isSpeedModded = false
 
+        telemetry.addData("Xpos", joyX)
+        telemetry.addData("Ypos", joyY)
+
         // movement of all wheels
         TriWheels.drive(
             joyRadians,

@@ -115,9 +115,23 @@ object SpecterDrive : API() {
                 addData("Turn", turn)
                 update()
             }
-            if (isLog)
-                CsvLogging.writeFile("OTOS", arrayOf(otos.position.x, xError, otos.position.y, yError, otos.position.h, hError, turn)) }
+            if (isLog) {
+                CsvLogging.writeFile(
+                    "OTOS",
+                    arrayOf(
+                        otos.position.x,
+                        xError,
+                        otos.position.y,
+                        yError,
+                        otos.position.h,
+                        hError,
+                        turn
+                    )
+                )
+                CsvLogging.flush("OTOS")
+            }
 
+        }
         TriWheels.power(0.0, 0.0, 0.0)
 
         otos.position = SparkFunOTOS.Pose2D(0.0, 0.0, 0.0)
@@ -128,20 +142,32 @@ object SpecterDrive : API() {
      */
     private fun computePower() {
 
-        var rad: Double = atan2(yError, xError) - PI
+        //Adjusted Vector Components
+        val adjX = xError * STRAFE_GAIN
+        val adjY = yError * SPEED_GAIN
 
-        var magnitude: Double =
-            sqrt((xError * STRAFE_GAIN) * (xError * STRAFE_GAIN) + (yError * SPEED_GAIN) * (yError * SPEED_GAIN))
+        //Direction And Magnetude of Vector (No turning)
+        val rad = atan2(adjY, adjX)
+        val magnitude = sqrt(adjX * adjX + adjY * adjY)
 
-        var (redWheelPower, greenWheelPower, blueWheelPower) = TriWheels.compute(rad, magnitude)
 
-        turn = Range.clip(0 * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
+        // Compute translation powers
+        var (r, g, b) = TriWheels.compute(rad, magnitude)
 
-        redWheelPower = clipWheelPower(redWheelPower + turn)
-        greenWheelPower = clipWheelPower(greenWheelPower + turn)
-        blueWheelPower = clipWheelPower(blueWheelPower + turn)
+        // Compute rotation
+        turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
 
-        TriWheels.power(redWheelPower, greenWheelPower, blueWheelPower)
+        // Mix
+        r += turn
+        g += turn
+        b += turn
+
+        // Normalize so no wheel exceeds ±1
+        val max = maxOf(abs(r), abs(g), abs(b), 1.0)
+        r /= max; g /= max; b /= max
+
+        // Clip to  desired [-0.3, -0.2] U [0.2, 0.3]
+        TriWheels.power(clipWheelPower(r), clipWheelPower(g), clipWheelPower(b))
 
 
     }
