@@ -171,13 +171,13 @@ object RobotConfig {
         @JvmField
         var H_THRESHOLD: Double = 4.0
 
-
-        //@TODO Remove turn and dir
+        /**
+         * TUNABLE OFFSET (rotation between OTOS frame and robot drive frame)
+         */
         @JvmField
-        var turn: Double = 90.0
+        val OFFSET_RAD = Math.toRadians(-60.0)   // try different radian values until its linear (
 
-        @JvmField
-        var dir: Double = -1.0
+
 
 
     }

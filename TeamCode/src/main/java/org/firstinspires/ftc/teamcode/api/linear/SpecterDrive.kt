@@ -11,6 +11,7 @@ import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.MAX_AUTO_TURN
 import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.SPEED_GAIN
 import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.STRAFE_GAIN
 import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.TURN_GAIN
+import org.firstinspires.ftc.teamcode.RobotConfig.OTOS.OFFSET_RAD
 import org.firstinspires.ftc.teamcode.api.CsvLogging
 import org.firstinspires.ftc.teamcode.api.TriWheels
 import org.firstinspires.ftc.teamcode.core.API
@@ -142,17 +143,20 @@ object SpecterDrive : API() {
      */
     private fun computePower() {
 
-        //Adjusted Vector Components
+
+        // Adjusted Vector Components (apply gains)
         val adjX = xError * STRAFE_GAIN
         val adjY = yError * SPEED_GAIN
 
-        //Direction And Magnetude of Vector (No turning)
+        // Direction and magnitude of vector in OTOS frame
         val rad = atan2(adjY, adjX)
         val magnitude = sqrt(adjX * adjX + adjY * adjY)
 
+        // Rotate into drive frame
+        val driveRad = rad - OFFSET_RAD
 
         // Compute translation powers
-        var (r, g, b) = TriWheels.compute(rad, magnitude)
+        var (r, g, b) = TriWheels.compute(driveRad, magnitude)
 
         // Compute rotation
         turn = Range.clip(hError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN)
@@ -166,11 +170,11 @@ object SpecterDrive : API() {
         val max = maxOf(abs(r), abs(g), abs(b), 1.0)
         r /= max; g /= max; b /= max
 
-        // Clip to  desired [-0.3, -0.2] U [0.2, 0.3]
+        // Clip to desired range
         TriWheels.power(clipWheelPower(r), clipWheelPower(g), clipWheelPower(b))
-
-
     }
+
+
 
 
 
